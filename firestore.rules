@@ -1,0 +1,197 @@
+/**
+ * @file firestore.rules
+ * @description Firestore Security Rules for the CareerCompass AI application.
+ *
+ * @section Core Philosophy
+ * This ruleset enforces a strict user-ownership model. All user-specific data,
+ * including profiles, skills, projects, and roadmaps, is stored within a
+ * user-specific document tree (/users/{userId}/...). This ensures that users can
+ * only access and manage their own information, providing strong data privacy
+ * by default.
+ *
+ * @section Data Structure
+ * The data is organized into two primary structures:
+ * 1. User-Owned Data: A top-level `/users` collection where each document
+ *    `/users/{userId}` anchors all data related to a single user. This includes
+ *    subcollections for skills, roadmaps, progress, projects, and internships.
+ * 2. Public Data: A top-level `/companies` collection stores information that is
+ *    readable by all users of the application.
+ *
+ * @section Key Security Decisions
+ * - User Data Privacy: All data under `/users/{userId}` is strictly private.
+ *   Access is granted only if the requesting user's UID matches the {userId}
+ *   in the path.
+ * - No User Enumeration: Listing documents in the top-level `/users` collection
+ *   is explicitly disallowed to prevent scraping of user IDs.
+ * - Public Read-Only Data: The `/companies` collection is publicly readable by
+ *   anyone, but writes are disabled pending implementation of an admin role system.
+ * - Denormalization for Authorization: To ensure performant and secure rules,
+ *   subcollection documents (like skills and roadmaps) must contain a denormalized
+ *   owner ID (e.g., `userProfileId`). This is validated on creation and enforced
+ *   as immutable on update, preventing rules from needing costly `get()` calls to parent
+ *   documents.
+ * - Structural Segregation: Private user data and public company data are stored
+ *   in separate top-level collections, which simplifies rules and improves query
+ *   performance and security.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions to abstract and reuse common security logic.
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the provided userId.
+     * This is the core function for verifying document ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Verifies ownership for an existing document. Used for update and delete
+     * operations to ensure the document exists before the operation is allowed.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Validates that the owner ID field in a new subcollection document
+     * correctly links back to the parent user document.
+     * @param userId The UID of the user from the path.
+     * @param ownerFieldName The name of the field containing the owner's UID.
+     */
+    function newSubDocHasCorrectOwner(userId, ownerFieldName) {
+      return request.resource.data[ownerFieldName] == userId;
+    }
+
+    /**
+     * Enforces immutability on the owner ID field of a subcollection document
+     * during an update, preventing ownership from being transferred.
+     * @param ownerFieldName The name of the field containing the owner's UID.
+     */
+    function subDocOwnerIsImmutable(ownerFieldName) {
+      return request.resource.data[ownerFieldName] == resource.data[ownerFieldName];
+    }
+
+
+    /**
+     * @description Manages user profile documents.
+     * @path /users/{userId}
+     * @allow (create) An authenticated user can create their own profile document.
+     * @deny (create) A user cannot create a profile for another user's ID.
+     * @principle A user's root document can only be created, viewed, and modified by the user themselves.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Disallow listing all users for security.
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Manages the skills associated with a user profile.
+       * @path /users/{userId}/skills/{skillId}
+       * @allow (create) The user {userId} can create a new skill in their own profile.
+       * @deny (list) Another authenticated user cannot list the skills of user {userId}.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /skills/{skillId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && newSubDocHasCorrectOwner(userId, 'userProfileId');
+        allow update: if isExistingOwner(userId) && subDocOwnerIsImmutable('userProfileId');
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Manages personalized roadmaps for a user.
+       * @path /users/{userId}/roadmaps/{roadmapId}
+       * @allow (get) The user {userId} can read their own roadmap.
+       * @deny (get) A different user cannot read the roadmap of user {userId}.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /roadmaps/{roadmapId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && newSubDocHasCorrectOwner(userId, 'userProfileId');
+        allow update: if isExistingOwner(userId) && subDocOwnerIsImmutable('userProfileId');
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Manages progress entries for a user's roadmap tasks.
+       * @path /users/{userId}/progress/{progressId}
+       * @allow (update) The user {userId} can update their own progress entries.
+       * @deny (create) A different user cannot create a progress entry for user {userId}.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /progress/{progressId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && newSubDocHasCorrectOwner(userId, 'userProfileId');
+        allow update: if isExistingOwner(userId) && subDocOwnerIsImmutable('userProfileId');
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Manages projects a user has worked on.
+       * @path /users/{userId}/projects/{projectId}
+       * @allow (create) The user {userId} can add a new project to their profile.
+       * @deny (delete) A different user cannot delete a project belonging to user {userId}.
+       * @principle Enforces document ownership for writes and validates relational integrity.
+       */
+      match /projects/{projectId} {
+        // NOTE: The 'Project' entity should contain a 'userId' field that matches {userId}
+        // to ensure relational integrity, even during prototyping.
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && newSubDocHasCorrectOwner(userId, 'userId');
+        allow update: if isExistingOwner(userId) && subDocOwnerIsImmutable('userId');
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Manages internships a user has completed.
+       * @path /users/{userId}/internships/{internshipId}
+       * @allow (create) The user {userId} can add a new internship to their profile.
+       * @deny (update) A different user cannot modify an internship belonging to user {userId}.
+       * @principle Enforces document ownership for writes and validates relational integrity.
+       */
+      match /internships/{internshipId} {
+        // NOTE: The 'Internship' entity should contain a 'userId' field that matches {userId}
+        // to ensure relational integrity, even during prototyping.
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && newSubDocHasCorrectOwner(userId, 'userId');
+        allow update: if isExistingOwner(userId) && subDocOwnerIsImmutable('userId');
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description Manages public company profiles. This data is readable by anyone.
+     * @path /companies/{companyId}
+     * @allow (get) Any user, authenticated or not, can read company profiles.
+     * @deny (create) No user can create a new company document at this time.
+     * @principle Data is public for reads, but writes are restricted until an admin role is implemented.
+     */
+    match /companies/{companyId} {
+      allow get: if true;
+      allow list: if true;
+      // CRITICAL: Write access is disabled. The IR specifies admin-only writes, but no
+      // admin role or ownership field is defined in the 'Company' entity.
+      allow create: if false; // TODO: Implement admin-only write access.
+      allow update: if false; // TODO: Implement admin-only write access.
+      allow delete: if false; // TODO: Implement admin-only write access.
+    }
+  }
+}

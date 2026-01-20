@@ -1,0 +1,442 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile with their educational background, skills, experience, and career goals.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user profile."
+        },
+        "educationLevel": {
+          "type": "string",
+          "description": "User's highest level of education (e.g., Bachelor's, Master's, PhD)."
+        },
+        "codingLevel": {
+          "type": "number",
+          "description": "User's self-assessed coding proficiency level (e.g., 1-5)."
+        },
+        "csFundamentalsScore": {
+          "type": "number",
+          "description": "Normalized score representing the user's understanding of computer science fundamentals."
+        },
+        "dsaScore": {
+          "type": "number",
+          "description": "Normalized score representing the user's proficiency in data structures and algorithms."
+        },
+        "projectIds": {
+          "type": "array",
+          "description": "References to Projects. (Relationship: UserProfile 1:N Project)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "internshipIds": {
+          "type": "array",
+          "description": "References to Internships. (Relationship: UserProfile 1:N Internship)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "techStack": {
+          "type": "array",
+          "description": "List of technologies the user is familiar with.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "careerGoals": {
+          "type": "string",
+          "description": "User's desired career roles and target companies."
+        },
+        "timeConstraints": {
+          "type": "string",
+          "description": "User's available time for preparation and deadlines."
+        }
+      },
+      "required": [
+        "id",
+        "educationLevel",
+        "codingLevel",
+        "csFundamentalsScore",
+        "dsaScore",
+        "careerGoals",
+        "timeConstraints"
+      ]
+    },
+    "Skill": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Skill",
+      "type": "object",
+      "description": "Represents a specific skill and its associated score.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the skill."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the skill (e.g., DSA, Operating Systems)."
+        },
+        "score": {
+          "type": "number",
+          "description": "Normalized score (0-5) representing proficiency in the skill."
+        },
+        "userProfileId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N Skill)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "score",
+        "userProfileId"
+      ]
+    },
+    "Company": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Company",
+      "type": "object",
+      "description": "Represents a company profile with required skills, interview patterns, and reject rules.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the company."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the company."
+        },
+        "requiredSkills": {
+          "type": "array",
+          "description": "List of skills required by the company, each with a minimum threshold.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "skillWeightages": {
+          "type": "array",
+          "description": "Weightage assigned to each skill for the company's fit calculation.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "interviewPatterns": {
+          "type": "string",
+          "description": "Description of the company's interview patterns."
+        },
+        "rejectRules": {
+          "type": "string",
+          "description": "Rules that automatically reject candidates (e.g., DSA score below a threshold)."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "requiredSkills",
+        "skillWeightages"
+      ]
+    },
+    "Roadmap": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Roadmap",
+      "type": "object",
+      "description": "Represents a personalized preparation roadmap with time-bound tasks.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the roadmap."
+        },
+        "userProfileId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:1 Roadmap)"
+        },
+        "tasks": {
+          "type": "array",
+          "description": "List of tasks in the roadmap.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "prioritizedTopics": {
+          "type": "array",
+          "description": "List of high-ROI topics to prioritize.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "excludedTopics": {
+          "type": "array",
+          "description": "List of low-ROI topics to exclude.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "userProfileId",
+        "tasks",
+        "prioritizedTopics",
+        "excludedTopics"
+      ]
+    },
+    "Progress": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Progress",
+      "type": "object",
+      "description": "Represents a user's progress on their roadmap tasks.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the progress entry."
+        },
+        "userProfileId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N Progress)"
+        },
+        "taskId": {
+          "type": "string",
+          "description": "Reference to a specific task in the roadmap."
+        },
+        "isCompleted": {
+          "type": "boolean",
+          "description": "Indicates whether the task is completed."
+        },
+        "roadmapId": {
+          "type": "string",
+          "description": "Reference to Roadmap. (Relationship: Roadmap 1:N Progress)"
+        }
+      },
+      "required": [
+        "id",
+        "userProfileId",
+        "taskId",
+        "isCompleted"
+      ]
+    },
+    "Project": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Project",
+      "type": "object",
+      "description": "Represents a project the user has worked on.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the project."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the project."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the project."
+        },
+        "techStack": {
+          "type": "array",
+          "description": "Technologies used in the project.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "techStack"
+      ]
+    },
+    "Internship": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Internship",
+      "type": "object",
+      "description": "Represents an internship the user has completed.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the internship."
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Name of the company where the internship was completed."
+        },
+        "role": {
+          "type": "string",
+          "description": "Role held during the internship."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the responsibilities and tasks performed during the internship."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Start date of the internship.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "End date of the internship.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "companyName",
+        "role",
+        "description",
+        "startDate",
+        "endDate"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "google.com"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profiles. This collection uses path-based ownership, ensuring only the authenticated user (userId) can access their profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/skills/{skillId}",
+        "definition": {
+          "entityName": "Skill",
+          "schema": {
+            "$ref": "#/backend/entities/Skill"
+          },
+          "description": "Stores skills associated with a user.  This structure enforces that a user can only access their own skills. Includes denormalized `userProfileId` field for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "skillId",
+              "description": "The unique identifier for the skill."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/companies/{companyId}",
+        "definition": {
+          "entityName": "Company",
+          "schema": {
+            "$ref": "#/backend/entities/Company"
+          },
+          "description": "Stores company profiles and their skill requirements. Open access, rules enforce admin role for modifications.",
+          "params": [
+            {
+              "name": "companyId",
+              "description": "The unique identifier for the company."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/roadmaps/{roadmapId}",
+        "definition": {
+          "entityName": "Roadmap",
+          "schema": {
+            "$ref": "#/backend/entities/Roadmap"
+          },
+          "description": "Stores personalized roadmaps for users.  This structure enforces that a user can only access their own roadmap. Includes denormalized `userProfileId` field for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "roadmapId",
+              "description": "The unique identifier for the roadmap."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/progress/{progressId}",
+        "definition": {
+          "entityName": "Progress",
+          "schema": {
+            "$ref": "#/backend/entities/Progress"
+          },
+          "description": "Stores user progress on roadmap tasks.  This structure enforces that a user can only access their own progress data. Includes denormalized `userProfileId` field for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "progressId",
+              "description": "The unique identifier for the progress entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/projects/{projectId}",
+        "definition": {
+          "entityName": "Project",
+          "schema": {
+            "$ref": "#/backend/entities/Project"
+          },
+          "description": "Stores user created projects. This structure enforces that a user can only access their own projects. Includes denormalized `userProfileId` field for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "projectId",
+              "description": "The unique identifier for the project."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/internships/{internshipId}",
+        "definition": {
+          "entityName": "Internship",
+          "schema": {
+            "$ref": "#/backend/entities/Internship"
+          },
+          "description": "Stores internships created by users.  This structure enforces that a user can only access their own internships. Includes denormalized `userProfileId` field for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "internshipId",
+              "description": "The unique identifier for the internship."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability for the CareerCompass AI application. User profiles and related data (skills, roadmaps, progress) are organized under the `/users/{userId}` path, providing clear ownership and simplifying security rules. Company data is stored in a separate `/companies` collection with denormalized skill requirements, allowing efficient fit calculations. To support QAPs, data with different access requirements (e.g., public vs. private) is segregated into separate collections. The roadmap and progress entities are kept as subcollections under the user's profile to maintain a clear hierarchy. This design facilitates secure `list` operations and enables atomic creation of user-owned resources. No `get()` calls are needed in rules, fulfilling the critical requirement of authorization independence. Denormalization of authorization context (e.g., storing user IDs within related documents) ensures that rules can be evaluated based solely on the data present in the document being accessed, thereby avoiding hierarchical dependencies."
+  }
+}
+
+    
