@@ -189,10 +189,4 @@ GitHub: https://github.com/AbhiGHub77
 
 ---
 
-If you want, I can also:
-- 🔥 Make it **more startup-style**
-- 🎓 Make it **college-project friendly**
-- 💼 Optimize it for **resume / recruiter appeal**
-- 📌 Add **screenshots & badges**
 
-Just tell me 👍
