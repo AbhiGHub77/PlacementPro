@@ -32,7 +32,7 @@ export default function LandingPage() {
               <span className="text-lg font-bold">PlacementPro</span>
             </div>
             <div className="flex items-center gap-4">
-              <Link href="/dashboard">
+              <Link href="/onboarding">
                 <Button variant="hero" size="lg">
                   Get Started
                   <ChevronRight className="h-4 w-4" />
@@ -62,15 +62,17 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in">
-            <Link href="/dashboard">
+            <Link href="/onboarding">
               <Button variant="hero" size="xl">
                 Start Your Journey
                 <ChevronRight className="h-5 w-5" />
               </Button>
             </Link>
-            <Button variant="outline" size="xl">
-              See How It Works
-            </Button>
+            <Link href="/onboarding">
+              <Button variant="outline" size="xl">
+                See How It Works
+              </Button>
+            </Link>
           </div>
 
           {/* Stats */}
@@ -224,7 +226,7 @@ export default function LandingPage() {
           <p className="text-xl text-muted-foreground mb-8 max-w-xl mx-auto">
             Join thousands of students preparing smarter, not harder.
           </p>
-          <Link href="/dashboard">
+          <Link href="/onboarding">
             <Button variant="glow" size="xl">
               Start Free Assessment
               <ChevronRight className="h-5 w-5" />
